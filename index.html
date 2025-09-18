@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M4YD4Y - DESASTRES AÉREOS</title>
+    <link rel="stylesheet" href="css/web.css">
+    <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="netflix-header">
+        <div class="logo">M4YD4Y<span>· · · – – – · · ·</span></div>
+        <nav class="nav-links">
+            <a href="#"><i class="fas fa-home"></i> Início</a>
+            <a href="#"><i class="fas fa-fire"></i> Em Alta</a>
+            <a href="#"><i class="fas fa-history"></i> Histórico</a>
+            <a href="#"><i class="fas fa-bookmark"></i> Favoritos</a>
+        </nav>
+        <input type="text" class="search-bar" placeholder="🔍 Buscar episódios..." id="searchInput">
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1 class="hero-title">M4YD4Y DESASTRES AÉREOS</h1>
+            <p class="hero-description">
+                Explore os mais fascinantes e misteriosos acidentes aéreos da história. 
+                Investigação completa com especialistas e recriações detalhadas.
+            </p>
+            <div class="hero-buttons">
+                <a href="#" class="btn btn-primary" onclick="playRandom(); return false;">
+                    <i class="fas fa-play"></i> Reproduzir Aleatório
+                </a>
+                <a href="#" class="btn btn-secondary">
+                    <i class="fas fa-info-circle"></i> Mais Informações
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Conteúdo Principal -->
+    <main class="main-content" id="mainContent">
+        <div class="loading" id="loading">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+            <p>Carregando catálogo de vídeos...</p>
+        </div>
+    </main>
+
+    <!-- Botão Voltar ao Topo -->
+    <div class="scroll-top" id="scrollTop" onclick="scrollToTop()">
+        <i class="fas fa-arrow-up"></i>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-logo">M4YD4Y</div>
+        <div class="footer-links">
+            <a href="#">Início</a>
+            <a href="#">Séries</a>
+            <a href="#">Documentários</a>
+            <a href="#">Filmes</a>
+            <a href="#">Novidades</a>
+            <a href="#">Minha Lista</a>
+            <a href="#">Idioma</a>
+            <a href="#">Ajuda</a>
+        </div>
+        <p class="copyright">© 2024 M4YD4Y - DESASTRES AÉREOS. Todos os direitos reservados.</p>
+    </footer>
+
+    <!-- Script -->
+    <script src="catalogo_videos.js"></script>
+    <script>
+        // Configurações
+        const VIDEOS_PER_PAGE = 12;
+        let currentPage = 0;
+        let allVideos = [];
+        let filteredVideos = [];
+        let isSearching = false;
+    
+        // Aguardar o carregamento do arquivo JS
+        document.addEventListener('DOMContentLoaded', function() {
+            // Verificar se o objeto existe
+            if (typeof dailymotionVideos === 'undefined') {
+                document.getElementById('loading').innerHTML = `
+                    <div class="loading-spinner">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <p>Arquivo de vídeos não encontrado. Execute o script Python primeiro.</p>
+                `;
+                return;
+            }
+    
+            // Debug: Verificar a estrutura do objeto
+            console.log('Estrutura do objeto dailymotionVideos:', dailymotionVideos);
+            if (dailymotionVideos && dailymotionVideos.videos) {
+                console.log('Total de vídeos:', dailymotionVideos.videos.length);
+                if (dailymotionVideos.videos.length > 0) {
+                    console.log('Primeiro vídeo:', dailymotionVideos.videos[0]);
+                    console.log('Campos disponíveis:', Object.keys(dailymotionVideos.videos[0]));
+                }
+            }
+    
+            initializeApp();
+        });
+    
+        function initializeApp() {
+            // Preparar todos os vídeos - VERIFICAR A ESTRUTURA CORRETA
+            // Tenta diferentes possibilidades de estrutura
+            if (dailymotionVideos.videos) {
+                allVideos = dailymotionVideos.videos;
+            } else if (dailymotionVideos.allVideos) {
+                allVideos = dailymotionVideos.allVideos;
+            } else if (Array.isArray(dailymotionVideos)) {
+                allVideos = dailymotionVideos;
+            } else {
+                console.error('Estrutura do arquivo JS não reconhecida:', dailymotionVideos);
+                return;
+            }
+            
+            filteredVideos = allVideos;
+    
+            // Remover loading
+            document.getElementById('loading').remove();
+    
+            // Renderizar interface inicial
+            renderMainInterface();
+    
+            // Configurar eventos
+            setupEventListeners();
+    
+            // Carregar primeira página
+            loadMoreVideos();
+        }
+    
+        function renderMainInterface() {
+            const mainContent = document.getElementById('mainContent');
+            mainContent.innerHTML = `
+                <div id="searchResults" class="search-results" style="display: none;">
+                    <div class="result-count" id="resultCount"></div>
+                    <div class="videos-grid" id="searchResultsGrid"></div>
+                </div>
+    
+                <section class="category-section">
+                    <h2 class="category-title">
+                        <i class="fas fa-plane"></i>
+                        Todos os Episódios
+                    </h2>
+                    <div class="videos-grid" id="videosGrid"></div>
+                </section>
+    
+                <div id="loadingMore" style="text-align: center; padding: 40px; display: none;">
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                    <p>Carregando mais vídeos...</p>
+                </div>
+            `;
+        }
+    
+        function setupEventListeners() {
+            // Busca
+            document.getElementById('searchInput').addEventListener('input', handleSearch);
+    
+            // Scroll to top
+            window.addEventListener('scroll', toggleScrollTopButton);
+    
+            // Load more on scroll
+            window.addEventListener('scroll', handleScroll);
+        }
+    
+        function handleSearch(e) {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            const searchResults = document.getElementById('searchResults');
+            const resultCount = document.getElementById('resultCount');
+            const searchResultsGrid = document.getElementById('searchResultsGrid');
+            const videosGrid = document.getElementById('videosGrid');
+            const categorySection = document.querySelector('.category-section');
+    
+            if (searchTerm.length < 2) {
+                searchResults.style.display = 'none';
+                isSearching = false;
+                filteredVideos = allVideos;
+                currentPage = 0;
+                
+                // Mostrar a grade principal novamente
+                if (categorySection) categorySection.style.display = 'block';
+                videosGrid.innerHTML = '';
+                loadMoreVideos();
+                return;
+            }
+    
+            isSearching = true;
+    
+            // 🔎 Quebrar a busca em múltiplas palavras
+            const terms = searchTerm.split(/\s+/).filter(Boolean);
+    
+            // Buscar nos campos corretos do objeto de vídeos
+            const results = allVideos.filter(video => {
+                const title = (video.title || video.text || "").toLowerCase();
+                const channel = (video.channel || "").toLowerCase();
+                const description = (video.description || "").toLowerCase();
+                
+                // Verificar se ALGUM termo aparece em algum campo (busca mais abrangente)
+                return terms.some(term =>
+                    title.includes(term) ||
+                    channel.includes(term) ||
+                    (description && description.includes(term))
+                );
+            });
+    
+            filteredVideos = results;
+    
+            if (results.length > 0) {
+                resultCount.textContent = `${results.length} vídeo(s) encontrado(s) para "${searchTerm}"`;
+                
+                // CORREÇÃO: Renderizar os resultados SEM a classe video-lazy
+                searchResultsGrid.innerHTML = renderSearchResults(results);
+                
+                searchResults.style.display = 'block';
+                
+                // Esconder a grade principal durante a busca
+                if (categorySection) categorySection.style.display = 'none';
+            } else {
+                resultCount.textContent = `Nenhum vídeo encontrado para "${searchTerm}"`;
+                searchResultsGrid.innerHTML = '';
+                searchResults.style.display = 'block';
+                
+                // Manter a grade principal escondida
+                if (categorySection) categorySection.style.display = 'none';
+            }
+    
+            // Limpar a grade principal
+            videosGrid.innerHTML = '';
+        }
+    
+        // NOVA FUNÇÃO: Renderizar resultados de busca sem a classe video-lazy
+        function renderSearchResults(videos) {
+            return videos.map(video => {
+                const title = video.title || video.text || 'Sem título';
+                const imageUrl = video.imageUrl || video.thumbnail || 'https://via.placeholder.com/300x200/333/fff?text=Thumbnail';
+                const views = video.views || 'N/A';
+                const duration = video.duration || 'N/A';
+    
+                return `
+                    <div class="video-card" onclick="openVideo('${video.url}')">
+                        <img src="${imageUrl}" 
+                             alt="${title}" 
+                             class="video-thumb"
+                             loading="lazy"
+                             onerror="this.src='https://via.placeholder.com/300x200/333/fff?text=Thumbnail'">
+                        <div class="video-info">
+                            <h3 class="video-title">${title}</h3>
+                            <div class="video-meta">
+                                <span>${views}</span>
+                                <span class="video-duration">${duration}</span>
+                            </div>
+                        </div>
+                        <div class="video-hover">
+                            <div class="play-btn">
+                                <i class="fas fa-play"></i>
+                            </div>
+                            <h3 class="video-title">${title}</h3>
+                            <div class="video-meta">
+                                <span>${views}</span>
+                                <span class="video-duration">${duration}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    
+        function renderVideosGrid(videos) {
+            return videos.map(video => {
+                const title = video.title || video.text || 'Sem título';
+                const imageUrl = video.imageUrl || video.thumbnail || 'https://via.placeholder.com/300x200/333/fff?text=Thumbnail';
+                const views = video.views || 'N/A';
+                const duration = video.duration || 'N/A';
+    
+                return `
+                    <div class="video-card video-lazy" onclick="openVideo('${video.url}')">
+                        <img src="${imageUrl}" 
+                             alt="${title}" 
+                             class="video-thumb"
+                             loading="lazy"
+                             onerror="this.src='https://via.placeholder.com/300x200/333/fff?text=Thumbnail'">
+                        <div class="video-info">
+                            <h3 class="video-title">${title}</h3>
+                            <div class="video-meta">
+                                <span>${views}</span>
+                                <span class="video-duration">${duration}</span>
+                            </div>
+                        </div>
+                        <div class="video-hover">
+                            <div class="play-btn">
+                                <i class="fas fa-play"></i>
+                            </div>
+                            <h3 class="video-title">${title}</h3>
+                            <div class="video-meta">
+                                <span>${views}</span>
+                                <span class="video-duration">${duration}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    
+        function loadMoreVideos() {
+            if (isSearching) return;
+    
+            const start = currentPage * VIDEOS_PER_PAGE;
+            const end = start + VIDEOS_PER_PAGE;
+            const videosToShow = filteredVideos.slice(start, end);
+    
+            if (videosToShow.length === 0) return;
+    
+            const videosGrid = document.getElementById('videosGrid');
+            videosGrid.innerHTML += renderVideosGrid(videosToShow);
+    
+            currentPage++;
+    
+            // Observar os novos elementos para animação
+            setTimeout(() => {
+                document.querySelectorAll('.video-lazy').forEach(el => {
+                    el.classList.add('visible');
+                });
+            }, 100);
+        }
+    
+        function handleScroll() {
+            // Carregar mais vídeos quando chegar perto do final
+            const scrollHeight = document.documentElement.scrollHeight;
+            const scrollTop = document.documentElement.scrollTop;
+            const clientHeight = document.documentElement.clientHeight;
+    
+            if (scrollTop + clientHeight >= scrollHeight - 500 && !isSearching) {
+                loadMoreVideos();
+            }
+        }
+    
+        function toggleScrollTopButton() {
+            const scrollTopBtn = document.getElementById('scrollTop');
+            if (window.scrollY > 300) {
+                scrollTopBtn.classList.add('visible');
+            } else {
+                scrollTopBtn.classList.remove('visible');
+            }
+        }
+    
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+    
+        function openVideo(url) {
+            window.open(url, '_blank');
+        }
+    
+        function playRandom() {
+            if (allVideos.length > 0) {
+                const randomVideo = allVideos[Math.floor(Math.random() * allVideos.length)];
+                openVideo(randomVideo.url);
+            }
+        }
+    </script>
+</body>
+</html>
