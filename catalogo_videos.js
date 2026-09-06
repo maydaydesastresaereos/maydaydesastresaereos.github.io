@@ -1,4 +1,4 @@
-const catalogoVideos = {
+const dailymotionVideos = {
   "metadata": {
     "generated": "2026-09-06T00:24:24.721441",
     "source": "dailymotion + youtube",
