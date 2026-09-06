@@ -82,59 +82,48 @@
         let isSearching = false;
     
         // Aguardar o carregamento do arquivo JS
-        document.addEventListener('DOMContentLoaded', function() {
-            // Verificar se o objeto existe
-            if (typeof dailymotionVideos === 'undefined') {
-                document.getElementById('loading').innerHTML = `
-                    <div class="loading-spinner">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                    <p>Arquivo de vídeos não encontrado. Execute o script Python primeiro.</p>
-                `;
-                return;
-            }
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Corrigida a verificação para usar a variável declarada no .js
+    if (typeof catalogoVideos === 'undefined') {
+        document.getElementById('loading').innerHTML = `
+            <div class="loading-spinner">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <p>Arquivo de vídeos não encontrado. Execute o script Python primeiro.</p>
+        `;
+        return;
+    }
+
+    console.log('Estrutura do objeto catalogoVideos:', catalogoVideos);
+    initializeApp();
+});
+
+function initializeApp() {
+    // 2. Acessa a lista no caminho correto do objeto JSON
+    if (catalogoVideos.categories && catalogoVideos.categories.maydayEpisodes) {
+        allVideos = catalogoVideos.categories.maydayEpisodes;
+    } else if (Array.isArray(catalogoVideos)) {
+        allVideos = catalogoVideos;
+    } else {
+        console.error('Estrutura do arquivo JS não reconhecida:', catalogoVideos);
+        return;
+    }
     
-            // Debug: Verificar a estrutura do objeto
-            console.log('Estrutura do objeto dailymotionVideos:', dailymotionVideos);
-            if (dailymotionVideos && dailymotionVideos.videos) {
-                console.log('Total de vídeos:', dailymotionVideos.videos.length);
-                if (dailymotionVideos.videos.length > 0) {
-                    console.log('Primeiro vídeo:', dailymotionVideos.videos[0]);
-                    console.log('Campos disponíveis:', Object.keys(dailymotionVideos.videos[0]));
-                }
-            }
-    
-            initializeApp();
-        });
-    
-        function initializeApp() {
-            // Preparar todos os vídeos - VERIFICAR A ESTRUTURA CORRETA
-            // Tenta diferentes possibilidades de estrutura
-            if (dailymotionVideos.videos) {
-                allVideos = dailymotionVideos.videos;
-            } else if (dailymotionVideos.allVideos) {
-                allVideos = dailymotionVideos.allVideos;
-            } else if (Array.isArray(dailymotionVideos)) {
-                allVideos = dailymotionVideos;
-            } else {
-                console.error('Estrutura do arquivo JS não reconhecida:', dailymotionVideos);
-                return;
-            }
-            
-            filteredVideos = allVideos;
-    
-            // Remover loading
-            document.getElementById('loading').remove();
-    
-            // Renderizar interface inicial
-            renderMainInterface();
-    
-            // Configurar eventos
-            setupEventListeners();
-    
-            // Carregar primeira página
-            loadMoreVideos();
-        }
+    filteredVideos = allVideos;
+
+    // Remover loading
+    const loadingElem = document.getElementById('loading');
+    if (loadingElem) loadingElem.remove();
+
+    // Renderizar interface inicial
+    renderMainInterface();
+
+    // Configurar eventos
+    setupEventListeners();
+
+    // Carregar primeira página
+    loadMoreVideos();
+}
     
         function renderMainInterface() {
             const mainContent = document.getElementById('mainContent');
