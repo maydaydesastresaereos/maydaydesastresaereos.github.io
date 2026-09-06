@@ -1,4 +1,7 @@
-const dailymotionVideos = {
+// Arquivo gerado automaticamente em 06/09/2026 00:24:24
+// Catalogo unificado (Dailymotion + YouTube)
+
+const catalogoVideos = {
   "metadata": {
     "generated": "2026-09-06T00:24:24.721441",
     "source": "dailymotion + youtube",
